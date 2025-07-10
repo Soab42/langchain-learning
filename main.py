@@ -1,5 +1,6 @@
 from html import parser
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.agents import initialize_agent, Tool, AgentType
@@ -9,13 +10,25 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from pydantic import BaseModel, Field
 from langchain.schema.runnable import RunnablePassthrough, RunnableLambda, RunnableParallel,RunnableBranch
+# env loader
+from dotenv import load_dotenv
+load_dotenv()
 # from langchain.vectorstores import Chroma
 # from langchain.embeddings.ollama import OllamaEmbeddings
 # from langchain.chains import SimpleChain
 
 # Ensure you have the necessary environment variables set
-model = ChatOllama(
+openAi_model = ChatOpenAI(
+    model = "gpt-3.5-turbo",
+    temperature = 0.8,
+)
+mistralModel = ChatOllama(
     model = "mistral",
+    temperature = 0.8,
+)
+
+voiceModel=ChatOllama(
+    model = "sematre/orpheus:en",
     temperature = 0.8,
 )
 
@@ -49,8 +62,8 @@ parser = StrOutputParser()
 # )
 
 str_parser = StrOutputParser()
-chain1 = promt1 | model | str_parser
-chain2 = promt2 | model | str_parser
+chain1 = promt1 | openAi_model | str_parser
+chain2 = promt2 | openAi_model | str_parser
 
 parallel_chain = RunnableParallel({
     'joke': RunnablePassthrough(),
@@ -59,6 +72,15 @@ parallel_chain = RunnableParallel({
 
 final_chain = chain1 | parallel_chain
 
-print(final_chain.invoke({'topic':'cricket'})['joke'])
+# print(final_chain.invoke({'topic':'cricket'})['joke'])
 
-print(final_chain.invoke({'topic':'cricket'})['explanation'])
+# print(final_chain.invoke({'topic':'cricket'})['explanation'])
+# Get joke and explanation as before
+# result = final_chain.invoke({'topic': 'cricket'})
+# joke_text = result['joke']
+
+# Use the voiceModel to generate audio from the joke text
+audio_response = voiceModel.invoke('hlw! how are you?')  # Replace with the joke_text variable if needed
+
+# Print or handle the audio response
+print(audio_response)
