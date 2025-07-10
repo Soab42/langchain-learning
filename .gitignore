@@ -1,2 +1,8 @@
 .env
-venv
+venv/
+.streamlit/
+**/credentials.json
+**/gmail_service_account.json
+*.log
+*.pyc
+__pycache__/
