@@ -60,10 +60,13 @@ def greeting_workflow():
             cursor = conn.cursor()
             cursor.execute("SELECT DISTINCT area FROM users WHERE area IS NOT NULL AND area != ''")
             areas = [row[0] for row in cursor.fetchall()]
-            conn.close()
+         
 
             area = st.selectbox("Select Area", areas) if areas else st.text_input("Enter Area")
-            festival = st.text_input("Festival Name (e.g., Diwali)")
+            if area:
+                cursor.execute("SELECT name FROM festivals WHERE area=?", (area,))
+                festivals = [row[0] for row in cursor.fetchall()]
+                festival = st.selectbox("Select Festival", festivals) if festivals else st.text_input("Enter Festival Name")
 
             if area and festival and st.button("Generate Festival Greetings"):
                 # Get users by area

@@ -1,5 +1,5 @@
 import streamlit as st
-from modules import greetings, auto_reply, db, gmail_watch, user_manage,festive_manage
+from modules import greetings, auto_reply, db, gmail_watch, user_manage,festive_manage, manage_gmail
 
 st.set_page_config(page_title="Unified Email AI App", layout="wide")
 st.sidebar.title("Navigation")
@@ -13,7 +13,8 @@ page = st.sidebar.radio(
         "Email Logs",
         "Manage Users",
         "Manage Festivals",
-        "Gmail Watch Setup"
+        # "Gmail Watch Setup",
+        "Manage Gmail"
     ]
 )
 
@@ -31,5 +32,7 @@ elif page == "Manage Festivals":
     festive_manage.festive_manage_ui()
 elif page == "Gmail Watch Setup":
     gmail_watch.streamlit_watch_ui()
+elif page == "Manage Gmail":
+    manage_gmail.gmail_manage_ui()
 
 
