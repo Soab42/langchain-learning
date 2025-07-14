@@ -19,6 +19,7 @@ import os
 
 # --- Configuration ---
 openai.api_key = st.secrets["OPENAI_API_KEY"]
+print("OpenAI API Key:", openai.api_key)  # Debugging line to check if the key is loaded
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 GMAIL_USER = st.secrets["GMAIL_USER"]
 
@@ -74,6 +75,7 @@ def send_email_smtp(to, subject, body):
     except Exception as e:
         st.error(f"Failed to send email via SMTP: {e}")
         return False
+
 # --- Database Setup ---
 def init_db():
     conn = sqlite3.connect("users.db")
@@ -183,8 +185,9 @@ def import_festivals_from_csv(file):
 # --- Pydantic Model for Greeting Output ---
 class GreetingOutput(BaseModel):
     subject: str = Field(description="Subject line for the email")
-    email: str = Field(description="Full email greeting message")
+    email: str = Field(description="Full email greeting message in plain text")
     sms: str = Field(description="Short SMS greeting message under 160 characters")
+    html_card: str = Field(description="HTML card version of the greeting for email")
 
 greeting_parser = PydanticOutputParser(pydantic_object=GreetingOutput)
 
@@ -193,22 +196,43 @@ llm = ChatOpenAI(
     model="gpt-3.5-turbo",
     temperature=0.8,
 )
+
 prompt = PromptTemplate(
     input_variables=["name", "occasion"],
     template="""
     Create a professional and friendly {occasion} greeting for {name} suitable for sending via email and SMS.
-    - Generate a subject line for the email.
-    - Write a full email greeting message.
-    - Write a short SMS greeting message (under 160 characters).
-    - The sender is "sam haque, commartial landers ltd! 123 Main Street New York, NY 10001 USA".
-    {format_instructions}
-    """,
-    partial_variables={'format_instructions':greeting_parser.get_format_instructions()}
+
+    You must respond with a valid JSON object containing exactly these fields:
+    - subject: Subject line for the email
+    - email: Full email greeting message in plain text
+    - sms: Short SMS greeting message under 160 characters
+    - html_card: HTML card version of the greeting (with a nice layout, suitable for email, using inline CSS, and including the sender "sam haque, commartial landers ltd! 123 Main Street New York, NY 10001 USA" at the bottom)
+
+    Example format:
+    {{
+        "subject": "Happy Birthday, John!",
+        "email": "Dear John,\n\nWishing you a wonderful birthday...",
+        "sms": "Happy Birthday John! Hope your day is amazing!",
+        "html_card": "<div style='...'><h2>Happy Birthday!</h2>...</div>"
+    }}
+
+    Respond ONLY with the JSON object, no other text.
+    """
 )
-chain = prompt | llm | greeting_parser
+
+# Create the chain without output parser initially
+chain = LLMChain(
+    llm=llm,
+    prompt=prompt
+)
 
 # --- Streamlit App ---
 st.title("Dynamic Greeting Workflow Demo")
+
+# Initialize session state for generated messages
+if 'generated_messages' not in st.session_state:
+    st.session_state.generated_messages = {}
+
 init_db()
 
 menu = st.sidebar.selectbox("Menu", ["Send Greetings", "View Logs", "Manage Users", "Manage Festivals"])
@@ -221,13 +245,49 @@ if menu == "Send Greetings":
         if users:
             for user in users:
                 user_id, name, email, phone, birthday, area = user
-                result = chain.invoke({"name": name, "occasion": "birthday"})
-                st.write(f"**To:** {name} | **Email:** {email} | **Phone:** {phone}")
-                st.write(result)
-                if send_email_smtp(email, result.subject, result.email):
-                    st.success("Email sent via SMTP")
-                    st.warning("SMS sending skipped (mock)")
-                save_log(user_id, "birthday", result.email)
+                
+                # Generate message button
+                if st.button(f"Generate Birthday Message for {name}", key=f"generate_birthday_{user_id}"):
+                    try:
+                        # Get raw response from LLM
+                        raw_response = chain.run(name=name, occasion="birthday")
+                        
+                        # Parse the JSON response manually
+                        import json
+                        parsed_response = json.loads(raw_response)
+                        
+                        # Create GreetingOutput object
+                        result = GreetingOutput(**parsed_response)
+                        st.session_state.generated_messages[f"birthday_{user_id}"] = result
+                        st.success(f"Message generated for {name}!")
+                    except json.JSONDecodeError as e:
+                        st.error(f"Error parsing JSON response: {e}")
+                        st.error(f"Raw response: {raw_response}")
+                    except Exception as e:
+                        st.error(f"Error generating message: {e}")
+                
+                # Show generated message if available
+                if f"birthday_{user_id}" in st.session_state.generated_messages:
+                    result = st.session_state.generated_messages[f"birthday_{user_id}"]
+                    st.write(f"**To:** {name} | **Email:** {email} | **Phone:** {phone}")
+                    
+                    with st.expander(f"View Message for {name}"):
+                        st.write("**Subject:**", result.subject)
+                        st.write("**Email:**", result.email)
+                        st.write("**SMS:**", result.sms)
+                        st.write("**HTML Card:**")
+                        st.components.v1.html(result.html_card, height=300)
+                    
+                    # Send email button
+                    if st.button(f"Send Birthday Email to {name}", key=f"send_birthday_{user_id}"):
+                        if send_email_smtp(email, result.subject, result.email):
+                            st.success("Email sent via SMTP")
+                            save_log(user_id, "birthday", result.email)
+                        else:
+                            st.error("Failed to send email")
+                        st.warning("SMS sending skipped (mock)")
+                
+                st.markdown("---")
         else:
             st.info("No birthdays today.")
 
@@ -241,28 +301,69 @@ if menu == "Send Greetings":
         col1, col2 = st.columns([2, 3])
 
         with col1:
-            area = st.selectbox("Select Area", areas, key="area_select") if areas else st.text_input("Enter Area", key="area_input")
-
-            festivals = get_festivals_by_area(area) if area else []
-            if festivals:
-                festival = st.selectbox("Select Festival", festivals, key="festival_select")
+            if areas:
+                area = st.selectbox("Select Area", areas, key="area_select")
             else:
-                festival = st.text_input("Enter Today's Festival", key="festival_input")
+                area = st.text_input("Enter Area", key="area_input")
 
-            if st.button("Send Greetings"):
-                users = get_users_by_area(area)
+            if area:
+                festivals = get_festivals_by_area(area)
+                if festivals:
+                    festival = st.selectbox("Select Festival", festivals, key="festival_select")
+                else:
+                    festival = st.text_input("Enter Today's Festival", key="festival_input")
+
+                # Generate festival messages for all users in area
+                if st.button("Generate Festival Messages", key="generate_festival_messages"):
+                    users = get_users_by_area(area)
+                    if users:
+                        for user in users:
+                            user_id, name, email, phone, birthday, user_area = user
+                            try:
+                                # Get raw response from LLM
+                                raw_response = chain.run(name=name, occasion=festival)
+                                
+                                # Parse the JSON response manually
+                                import json
+                                parsed_response = json.loads(raw_response)
+                                
+                                # Create GreetingOutput object
+                                result = GreetingOutput(**parsed_response)
+                                st.session_state.generated_messages[f"festival_{user_id}"] = result
+                            except json.JSONDecodeError as e:
+                                st.error(f"Error parsing JSON response for {name}: {e}")
+                            except Exception as e:
+                                st.error(f"Error generating message for {name}: {e}")
+                        st.success("Festival messages generated!")
+                    else:
+                        st.info("No users found in this area.")
+
+                # Show generated messages if available
+                users = get_users_by_area(area) if area else []
                 if users:
                     for user in users:
-                        user_id, name, email, phone, birthday, area = user
-                        result = chain.invoke({"name": name, "occasion": festival})
-                        st.write(f"**To:** {name} | **Email:** {email} | **Phone:** {phone}")
-                        st.write(result)
-                        if send_email(email, result.subject, result.email):
-                            st.success("Email sent via Gmail API")
-                        st.warning("SMS sending skipped (mock)")
-                        save_log(user_id, "festival", result.email)
-                else:
-                    st.info("No users found in this area.")
+                        user_id, name, email, phone, birthday, user_area = user
+                        if f"festival_{user_id}" in st.session_state.generated_messages:
+                            result = st.session_state.generated_messages[f"festival_{user_id}"]
+                            st.write(f"**To:** {name} | **Email:** {email} | **Phone:** {phone}")
+                            
+                            with st.expander(f"View Festival Message for {name}"):
+                                st.write("**Subject:**", result.subject)
+                                st.write("**Email:**", result.email)
+                                st.write("**SMS:**", result.sms)
+                                st.write("**HTML Card:**")
+                                st.components.v1.html(result.html_card, height=300)
+                            
+                            # Send email button
+                            if st.button(f"Send Festival Email to {name}", key=f"send_festival_{user_id}"):
+                                if send_email(email, result.subject, result.email):
+                                    st.success("Email sent via Gmail API")
+                                    save_log(user_id, "festival", result.email)
+                                else:
+                                    st.error("Failed to send email")
+                                st.warning("SMS sending skipped (mock)")
+                            
+                            st.markdown("---")
 
         with col2:
             if 'area' in locals() and area:
@@ -309,7 +410,10 @@ elif menu == "Manage Users":
     st.subheader("All Users")
     conn = sqlite3.connect("users.db")
     df = pd.read_sql_query("SELECT * FROM users", conn)
-    st.dataframe(df)
+    if not df.empty:
+        st.dataframe(df)
+    else:
+        st.info("No users found.")
     conn.close()
 
 elif menu == "Manage Festivals":
@@ -323,7 +427,10 @@ elif menu == "Manage Festivals":
     conn.close()
 
     with st.form("add_festival_form"):
-        area = st.selectbox("Select Area (from users)", user_areas, key="festival_area_select") if user_areas else st.text_input("Area")
+        if user_areas:
+            area = st.selectbox("Select Area (from users)", user_areas, key="festival_area_select")
+        else:
+            area = st.text_input("Area")
         name = st.text_input("Festival Name")
         submitted = st.form_submit_button("Add Festival")
         if submitted:
@@ -339,5 +446,8 @@ elif menu == "Manage Festivals":
     st.subheader("All Festivals")
     conn = sqlite3.connect("users.db")
     df = pd.read_sql_query("SELECT * FROM festivals", conn)
-    st.dataframe(df)
+    if not df.empty:
+        st.dataframe(df)
+    else:
+        st.info("No festivals found.")
     conn.close()

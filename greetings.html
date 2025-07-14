@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Modern Artistic Greeting Card</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      .card-container {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        font-family: 'Inter', sans-serif;
+      }
+      
+      .card {
+        max-width: 450px;
+        width: 100%;
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease;
+      }
+      
+      .card:hover {
+        transform: translateY(-5px);
+      }
+      
+      .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+      }
+      
+      .floating-elements {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      
+      .floating-circle {
+        position: absolute;
+        border-radius: 50%;
+        background: linear-gradient(45deg, #3b82f6, #1e40af);
+        opacity: 0.05;
+        animation: float 6s ease-in-out infinite;
+      }
+      
+      .floating-circle:nth-child(1) {
+        width: 80px;
+        height: 80px;
+        top: 10%;
+        right: 10%;
+        animation-delay: 0s;
+      }
+      
+      .floating-circle:nth-child(2) {
+        width: 120px;
+        height: 120px;
+        bottom: 20%;
+        left: 5%;
+        animation-delay: 2s;
+      }
+      
+      .floating-circle:nth-child(3) {
+        width: 60px;
+        height: 60px;
+        top: 50%;
+        right: 20%;
+        animation-delay: 4s;
+      }
+      
+      @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(180deg); }
+      }
+      
+      .company-header {
+        background: #1e293b;
+        padding: 16px 30px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 2px solid #3b82f6;
+      }
+      
+      .company-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .logo-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #3b82f6, #1e40af);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 18px;
+      }
+      
+      .company-name {
+        color: #f8fafc;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+      }
+      
+      .company-tagline {
+        color: #94a3b8;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .header {
+        padding: 40px 30px;
+        text-align: center;
+        position: relative;
+        background: linear-gradient(135deg, #3b82f6, #1e40af);
+        color: white;
+      }
+      
+      .header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        letter-spacing: -0.5px;
+      }
+      
+      .header p {
+        font-size: 14px;
+        font-weight: 300;
+        opacity: 0.9;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      
+      .geometric-pattern {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(45deg, rgba(255, 255, 255, 0.15), transparent);
+        clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+      }
+      
+      .image-section {
+        position: relative;
+        height: 200px;
+        background: linear-gradient(45deg, #f1f5f9, #e2e8f0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      
+      .image-section::before {
+        content: '';
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: pulse 3s ease-in-out infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+      }
+      
+      .celebration-icon {
+        font-size: 60px;
+        z-index: 1;
+        position: relative;
+        animation: bounce 2s ease-in-out infinite;
+      }
+      
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+      }
+      
+      .content {
+        padding: 40px 30px;
+        text-align: center;
+        color: #334155;
+        position: relative;
+      }
+      
+      .content::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(90deg, #3b82f6, #1e40af);
+        border-radius: 2px;
+      }
+      
+      .message {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 25px;
+        font-weight: 400;
+        opacity: 0.9;
+        margin-top: 20px;
+      }
+      
+      .signature {
+        font-size: 14px;
+        opacity: 0.8;
+        margin-bottom: 30px;
+        font-style: italic;
+      }
+      
+      .signature strong {
+        color: #3b82f6;
+        font-weight: 600;
+      }
+      
+      .cta-button {
+        display: inline-block;
+        padding: 14px 28px;
+        background: linear-gradient(135deg, #3b82f6, #1e40af);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .cta-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
+      }
+      
+      .cta-button:hover::before {
+        left: 100%;
+      }
+      
+      .cta-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 40px rgba(59, 130, 246, 0.3);
+      }
+      
+      .footer {
+        padding: 20px;
+        text-align: center;
+        font-size: 11px;
+        color: #64748b;
+        border-top: 1px solid #e2e8f0;
+        letter-spacing: 0.3px;
+        background: #f8fafc;
+      }
+      
+      .footer-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      
+      .footer-logo-icon {
+        width: 20px;
+        height: 20px;
+        background: linear-gradient(135deg, #3b82f6, #1e40af);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 10px;
+      }
+      
+      .sparkles {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      
+      .sparkle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: #3b82f6;
+        border-radius: 50%;
+        animation: sparkle 2s linear infinite;
+      }
+      
+      .sparkle:nth-child(1) { top: 20%; left: 20%; animation-delay: 0s; }
+      .sparkle:nth-child(2) { top: 40%; right: 30%; animation-delay: 0.5s; }
+      .sparkle:nth-child(3) { bottom: 30%; left: 40%; animation-delay: 1s; }
+      .sparkle:nth-child(4) { top: 60%; right: 20%; animation-delay: 1.5s; }
+      
+      @keyframes sparkle {
+        0%, 100% { opacity: 0; transform: scale(0); }
+        50% { opacity: 1; transform: scale(1); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card-container">
+      <div class="card">
+        <div class="company-header">
+          <div class="company-logo">
+            <div class="logo-icon">AC</div>
+            <div>
+              <div class="company-name">Acme Corporation</div>
+              <div class="company-tagline">Excellence in Innovation</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="floating-elements">
+          <div class="floating-circle"></div>
+          <div class="floating-circle"></div>
+          <div class="floating-circle"></div>
+        </div>
+        
+        <div class="sparkles">
+          <div class="sparkle"></div>
+          <div class="sparkle"></div>
+          <div class="sparkle"></div>
+          <div class="sparkle"></div>
+        </div>
+        
+        <div class="header">
+          <div class="geometric-pattern"></div>
+          <h1>🎉 Happy Birthday!</h1>
+          <p>celebrating you today</p>
+        </div>
+        
+        <div class="image-section">
+          <div class="celebration-icon">🎂</div>
+        </div>
+        
+        <div class="content">
+          <p class="message">
+            May your day be filled with laughter, joy, and endless possibilities. 
+            You deserve the very best this year and always. Here's to another year 
+            of amazing adventures and beautiful memories.
+          </p>
+          
+          <p class="signature">
+            — With warm regards from the team,<br />
+            <strong>Acme Corporation</strong>
+          </p>
+          
+          <a href="#" class="cta-button">View Team Message</a>
+        </div>
+        
+        <div class="footer">
+          <div class="footer-logo">
+            <div class="footer-logo-icon">AC</div>
+            <span>Acme Corporation</span>
+          </div>
+          © 2025 Acme Corporation. All rights reserved.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
