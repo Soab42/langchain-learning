@@ -1,5 +1,5 @@
 import streamlit as st
-from modules import db, ai
+from modules import db, ai, gmail 
 
 def greeting_workflow():
     st.header("Greeting Workflow")
@@ -28,6 +28,7 @@ def greeting_workflow():
                     greeting_chain = ai.get_greeting_chain(llm)
                     if st.button(f"Generate Birthday Greeting for {name}", key=f"bday_{user_id}"):
                         result = greeting_chain.invoke({"name": name, "occasion": "Birthday"})
+                        gmail.send_email(email,result.subject, result.email)
                         st.write(f"**Subject:** {result.subject}")
                         st.write(f"**Email:** {result.email}")
                         st.write(f"**SMS:** {result.sms}")
@@ -86,6 +87,7 @@ def greeting_workflow():
                             st.warning("Do Not Contact is enabled for this user. Greeting will not be sent.")
                             continue
                         result = greeting_chain.invoke({"name": name, "occasion": festival})
+                        gmail.send_email(email, result.subject, result.email,)
                         st.write(f"**Subject:** {result.subject}")
                         st.write(f"**Email:** {result.email}")
                         st.write(f"**SMS:** {result.sms}")

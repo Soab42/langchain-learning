@@ -6,4 +6,4 @@ venv/
 *.log
 *.pyc
 __pycache__/
-\"token.pkl\" 
+**/token.pkl

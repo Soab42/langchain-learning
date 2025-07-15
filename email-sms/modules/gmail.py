@@ -7,9 +7,12 @@ import base64
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import datetime
-
+import modules.db as db
+print("Current working directory:", os.getcwd())
+base_dir = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(base_dir, 'greetings.html')
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
-
+print("File path:", file_path)
 def gmail_authenticate():
     creds = None
     if os.path.exists('token.pkl'):
@@ -68,7 +71,7 @@ def convert_timestamp_to_datetime(timestamp_ms):
     except (ValueError, TypeError):
         return "(Invalid Date)"
 
-def fetch_unread_emails(max_results=10):
+def fetch_unread_emails(max_results=20):
     service = gmail_authenticate()
     results = service.users().messages().list(userId='me', labelIds=['INBOX'], q="is:unread", maxResults=max_results).execute()
     messages = results.get('messages', [])
@@ -86,8 +89,13 @@ def fetch_unread_emails(max_results=10):
             'id': msg_id,
             'sender': sender,
             'subject': subject,
-            'snippet': snippet
+            'snippet': snippet,
+            'received_at': convert_timestamp_to_datetime(msg_detail.get('internalDate')),
+            'body': get_email_content(msg_detail),
+            'replied': False,  # Default to False, can be updated later
+            'reply': ''  # Default empty reply
         })
+        db.save_emails_to_db(email_list)
     return email_list
 
 def get_email_detail(message_id):
@@ -102,8 +110,18 @@ def send_email(to, subject, body):
     message['to'] = to
     message['subject'] = subject
 
+        # Determine if the file is HTML or plain text
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except FileNotFoundError:
+        print(f"Error: File not found -> greetings.html")
+        return
+
+    ext = os.path.splitext(file_path)[1].lower()
+
     # Assuming plain text for now. Can extend to HTML later.
-    msg_text = MIMEText(body, 'plain')
+    msg_text = MIMEText(content, 'html' if ext == '.html' else 'plain')
     message.attach(msg_text)
 
     raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()

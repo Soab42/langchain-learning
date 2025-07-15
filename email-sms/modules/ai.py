@@ -26,15 +26,42 @@ greeting_prompt = PromptTemplate(
     Ensure the output is strict JSON (no trailing commas, use double quotes, no comments).
     """
 )
-
 # --- LLM Chain for Greetings ---
 def get_greeting_chain(llm):
     return greeting_prompt.partial(format_instructions=greeting_parser.get_format_instructions()) | llm | greeting_parser
 
-# --- General AI Reply (for auto-reply) ---
+class EmailReplyOutput(BaseModel):
+    reply: str = Field(description="A professional reply to the email")
+    subject: str = Field(description="Subject line for the reply email")
+
+email_reply_parser = PydanticOutputParser(pydantic_object=EmailReplyOutput)
+# --- Function to create the database and tables ---
+
+# Define the prompt template
+email_reply_prompt = PromptTemplate(
+    input_variables=["subject", "body", "format_instructions"],
+    template="""
+You are an AI assistant. Read the email below and generate a professional reply and subject.
+
+Subject: {subject}
+
+Body:
+{body}
+
+{format_instructions}
+
+Ensure the output is a strict JSON object matching the structure.
+"""
+)
+
+def get_email_reply_chain(llm):
+    return email_reply_prompt.partial(format_instructions=email_reply_parser.get_format_instructions()) | llm | email_reply_parser
+
 def generate_ai_reply(llm, subject, body):
-    prompt = f"You are an AI assistant. Read the email below and generate a professional reply.\n\nSubject: {subject}\n\nBody:\n{body}"
-    return llm.invoke(prompt)
+    return get_email_reply_chain(llm).invoke({
+        "subject": subject,
+        "body": body
+    })
 
 # --- Example LLM loader ---
 def get_llm():

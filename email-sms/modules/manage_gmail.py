@@ -32,7 +32,7 @@ def gmail_manage_ui():
                         # It needs to be implemented there for this to work.
                         send_email(to_email, subject, body)
                         st.success("Email send request initiated. (Note: send_email function needs full implementation in modules/gmail.py)")
-                        st.session_state.show_compose = False # Hide compose after sending
+                        # st.session_state.show_compose = False # Hide compose after sending
                     except Exception as e:
                         st.error(f"Error sending email: {e}")
         else:
